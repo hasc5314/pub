@@ -6,7 +6,21 @@ This repository exposes a single helper script, `install-vault-helper.sh`, that 
 - Install HashiCorp Vault inside the container, configure Raft storage, generate or import TLS certificates, and tune the systemd unit for production defaults.
 - Print the resulting access details plus the follow-up steps (`vault operator init`, unseal, etc.).
 
-### Quick Start
+### One-Command Install (run on your Proxmox host)
+
+```bash
+bash -c "$(wget -qLO - https://raw.githubusercontent.com/hasc5314/pub/main/install-vault-helper.sh)"
+```
+
+Prefer `curl`?
+
+```bash
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/hasc5314/pub/main/install-vault-helper.sh)"
+```
+
+Both commands download the latest script directly from this repo and execute it, matching the common “helper script” UX in the Proxmox community. Use `-d` or environment overrides if you want non-interactive behavior.
+
+### Quick Start (manual copy)
 
 ```bash
 # Clone and enter the repo
