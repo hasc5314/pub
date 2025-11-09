@@ -141,6 +141,34 @@ PY
     return $status
 }
 
+resolve_template_image() {
+    local requested="$1"
+    local storage="$2"
+
+    if pveam list "$storage" 2>/dev/null | awk 'NR>1 {print $2}' | grep -qx "$requested"; then
+        printf '%s' "$requested"
+        return
+    fi
+
+    if pveam available | awk 'NR>1 {print $2}' | grep -qx "$requested"; then
+        printf '%s' "$requested"
+        return
+    fi
+
+    local base="${requested%%_*}"
+    local fallback
+    fallback=$(pveam available | awk -v base="$base" 'NR>1 && $2 ~ base {print $2}' | sort -V | tail -n 1)
+
+    if [[ -n "$fallback" ]]; then
+        msg_warn "Template ${requested} not found; using ${fallback}."
+        printf '%s' "$fallback"
+        return
+    fi
+
+    msg_error "Template ${requested} not available. Run 'pveam available' to view valid templates or set TEMPLATE_IMAGE manually."
+    exit 1
+}
+
 require_command() {
     local cmd="$1"
     command -v "$cmd" >/dev/null 2>&1 || {
@@ -190,6 +218,9 @@ prompt_default "Vault data path" VAULT_DATA_PATH "$VAULT_DATA_PATH"
 prompt_default "TLS mode (selfsigned/provided/disabled)" TLS_MODE "$TLS_MODE"
 
 prompt_yes_no "Use DHCP for networking" USE_DHCP "y"
+
+REQUESTED_TEMPLATE_IMAGE="$TEMPLATE_IMAGE"
+TEMPLATE_IMAGE=$(resolve_template_image "$TEMPLATE_IMAGE" "$TEMPLATE_STORAGE")
 
 if [[ "$USE_DHCP" == "y" ]]; then
     CT_IP_ADDR=""
@@ -253,6 +284,7 @@ printf " %-20s %s\n" "CT ID" "$CT_ID"
 printf " %-20s %s\n" "Hostname" "$CT_NAME"
 printf " %-20s %s\n" "Storage" "${STORAGE_POOL}:${CT_DISK_GB}G"
 printf " %-20s %s\n" "CPU / Memory" "${CT_CORES} cores / ${CT_MEMORY} MiB"
+printf " %-20s %s\n" "Template image" "$TEMPLATE_IMAGE"
 if [[ -n "$CT_PRIMARY_IP" ]]; then
     printf " %-20s %s\n" "Networking" "Static ${CT_IP_ADDR}/${CT_CIDR} via ${CT_GATEWAY}"
 else
