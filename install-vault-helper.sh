@@ -114,7 +114,10 @@ prompt_yes_no() {
 }
 
 generate_password() {
-    tr -dc 'A-Za-z0-9!#$%*+-=' </dev/urandom | head -c 22
+    (
+        set +o pipefail >/dev/null 2>&1 || true
+        tr -dc 'A-Za-z0-9!#$%*+-=' </dev/urandom | head -c 22
+    )
 }
 
 require_command() {
