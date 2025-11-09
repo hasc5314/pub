@@ -114,10 +114,31 @@ prompt_yes_no() {
 }
 
 generate_password() {
-    (
-        set +o pipefail >/dev/null 2>&1 || true
-        tr -dc 'A-Za-z0-9!#$%*+-=' </dev/urandom | head -c 22
-    )
+    if command -v python3 >/dev/null 2>&1; then
+        python3 - <<'PY'
+import secrets
+alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!#$%*+-="
+print(''.join(secrets.choice(alphabet) for _ in range(22)))
+PY
+        return
+    fi
+
+    local had_pipefail=0
+    if set -o | grep -q 'pipefail.*on'; then
+        had_pipefail=1
+        set +o pipefail
+    fi
+
+    local pw
+    pw=$(tr -dc 'A-Za-z0-9!#$%*+-=' </dev/urandom | head -c 22)
+    local status=$?
+
+    if [[ $had_pipefail -eq 1 ]]; then
+        set -o pipefail
+    fi
+
+    printf '%s' "$pw"
+    return $status
 }
 
 require_command() {
